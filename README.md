@@ -246,20 +246,10 @@ docker-compose up --build studygroup
 - **Microservices Architecture**: Distributed system with independent services
 - **API Gateway Pattern**: Single entry point for routing and cross-cutting concerns
 - **Service Discovery Pattern**: Eureka for dynamic service registration and discovery
-- **Database per Service**: Each microservice has its own database schema
-
-### Creational Patterns
-- **Factory Pattern**: Used in JWT token creation and service bean configuration
-- **Builder Pattern**: Implemented in DTO construction and complex object creation
-
-### Structural Patterns
-- **Adapter Pattern**: JWT authentication filter adapts HTTP requests to security context
-- **Facade Pattern**: Service layer provides simplified interface to complex business logic
 
 ### Behavioral Patterns
-- **Observer Pattern**: Eureka service registry observes service health status
-- **Strategy Pattern**: Different authentication strategies based on user roles
-- **Template Method Pattern**: Common CRUD operations in repository layer
+- **Aspect-Oriented Programming**: Cross-cutting concerns like logging and performance monitoring
+- **Repository Pattern**: Data access abstraction through repository interfaces
 
 ## 🏗️ SOLID Principles Implementation
 
@@ -268,20 +258,9 @@ docker-compose up --build studygroup
 - Separate controllers for different functionalities (Auth, Groups, Admin)
 - Dedicated repositories for data access
 
-### Open/Closed Principle (OCP)
-- Service interfaces allow extension without modification
-- Strategy pattern for different authentication mechanisms
-- Configurable CORS and security policies
-
-### Liskov Substitution Principle (LSP)
-- Service implementations can be substituted through interfaces
-- Repository interfaces properly implemented by JPA repositories
-- DTO inheritance hierarchy maintains substitutability
-
 ### Interface Segregation Principle (ISP)
-- Specific service interfaces for different operations
+- Specific service interfaces for different operations (IGroupService, IAdminService, etc.)
 - Separate DTOs for different use cases
-- Granular security configurations
 
 ### Dependency Inversion Principle (DIP)
 - Services depend on interfaces, not concrete implementations
@@ -295,27 +274,12 @@ docker-compose up --build studygroup
 - **Naming Conventions**: Descriptive class, method, and variable names
 - **File Organization**: Related classes grouped in appropriate packages
 
-### Code Quality
-- **DRY Principle**: Eliminated code duplication through helper methods and base classes
-- **KISS Principle**: Simple, straightforward implementations
-- **YAGNI Principle**: Avoided over-engineering and unnecessary complexity
-
-### Documentation
-- **JavaDoc**: Comprehensive method and class documentation
-- **API Documentation**: Clear endpoint descriptions and request/response formats
-- **Code Comments**: Explanatory comments for complex business logic
-
 ### Error Handling
-- **Global Exception Handler**: Centralized error processing
-- **Custom Exceptions**: Specific exception types for different error scenarios
-- **Consistent Error Responses**: Standardized error format across all services
-
-### Testing
-- **Unit Tests**: Test individual components in isolation
-- **Integration Tests**: Test service interactions
-- **Test Coverage**: Comprehensive test coverage for critical business logic
+- **Global Exception Handler**: Centralized error processing with @RestControllerAdvice
+- **Custom Exception Handling**: Specific handling for validation and enum errors
+- **Consistent Error Responses**: Standardized ResponseDTO format across all services
 
 ### Security
+- **JWT Authentication**: Token-based security with role-based access control
 - **Input Validation**: Proper validation of all incoming data
-- **Secure Defaults**: Secure configuration out of the box
-- **Principle of Least Privilege**: Minimal required permissions for each role
+- **Role-Based Access**: Different permissions for STUDENT, CREATOR, and ADMIN roles
