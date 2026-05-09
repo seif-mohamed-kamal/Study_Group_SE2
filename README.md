@@ -58,6 +58,17 @@ CREATE DATABASE studygroup_db;
 ```
 
 #### 2. Backend Services
+
+##### Build Target Folders
+```bash
+# Build all microservices (creates target folders)
+cd discovery-server && ./mvnw clean install
+cd ../studygroup && ./mvnw clean install
+cd ../adminmicroservice && ./mvnw clean install
+cd ../api-gateway && ./mvnw clean install
+```
+
+##### Start Services
 ```bash
 # Start each microservice in separate terminals
 
@@ -229,79 +240,82 @@ docker-compose up --build studygroup
 3. **Test changes** through API Gateway or frontend
 4. **Commit changes** to Git
 
-## 🐛 Troubleshooting
+## 🎨 Design Patterns Used
 
-### Common Issues
+### Architectural Patterns
+- **Microservices Architecture**: Distributed system with independent services
+- **API Gateway Pattern**: Single entry point for routing and cross-cutting concerns
+- **Service Discovery Pattern**: Eureka for dynamic service registration and discovery
+- **Database per Service**: Each microservice has its own database schema
 
-1. **Port conflicts**: Check if ports 3000, 8080, 8082, 8085, 8761, 3306 are available
-2. **Database connection**: Verify MySQL is running and credentials are correct
-3. **Service discovery**: Ensure Eureka server is running before other services
-4. **Build failures**: Check Java version and Maven dependencies
+### Creational Patterns
+- **Factory Pattern**: Used in JWT token creation and service bean configuration
+- **Builder Pattern**: Implemented in DTO construction and complex object creation
 
-### Health Checks
+### Structural Patterns
+- **Adapter Pattern**: JWT authentication filter adapts HTTP requests to security context
+- **Facade Pattern**: Service layer provides simplified interface to complex business logic
 
-All services include health checks:
-- **Eureka**: http://localhost:8761
-- **API Gateway**: http://localhost:8085
-- **Study Group**: http://localhost:8080/actuator/health
-- **Admin**: http://localhost:8082/actuator/health
+### Behavioral Patterns
+- **Observer Pattern**: Eureka service registry observes service health status
+- **Strategy Pattern**: Different authentication strategies based on user roles
+- **Template Method Pattern**: Common CRUD operations in repository layer
 
-## 📊 Environment Variables
+## 🏗️ SOLID Principles Implementation
 
-### Database Configuration
-```bash
-SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/studygroup_db
-SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=yourpassword
-SPRING_JPA_HIBERNATE_DDL_AUTO=update
-```
+### Single Responsibility Principle (SRP)
+- Each service handles one specific business domain
+- Separate controllers for different functionalities (Auth, Groups, Admin)
+- Dedicated repositories for data access
 
-### Eureka Configuration
-```bash
-EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://localhost:8761/eureka
-```
+### Open/Closed Principle (OCP)
+- Service interfaces allow extension without modification
+- Strategy pattern for different authentication mechanisms
+- Configurable CORS and security policies
 
-## 🚀 Production Deployment
+### Liskov Substitution Principle (LSP)
+- Service implementations can be substituted through interfaces
+- Repository interfaces properly implemented by JPA repositories
+- DTO inheritance hierarchy maintains substitutability
 
-For production deployment:
+### Interface Segregation Principle (ISP)
+- Specific service interfaces for different operations
+- Separate DTOs for different use cases
+- Granular security configurations
 
-1. **Use environment variables** for sensitive data
-2. **Implement proper logging** and monitoring
-3. **Set up SSL/TLS** termination
-4. **Use container orchestration** (Kubernetes/Docker Swarm)
-5. **Implement backup strategies** for database
-6. **Add monitoring** (Prometheus, Grafana)
-7. **Use secrets management** for credentials
+### Dependency Inversion Principle (DIP)
+- Services depend on interfaces, not concrete implementations
+- Spring dependency injection manages object creation
+- Repository pattern abstracts database access
 
-## 📝 Development Guidelines
+## 🧹 Clean Code Practices
 
-1. **Follow RESTful API design**
-2. **Write unit tests** for business logic
-3. **Use meaningful commit messages**
-4. **Keep services loosely coupled**
-5. **Implement proper error handling**
-6. **Document API endpoints**
+### Code Organization
+- **Package Structure**: Clear separation by layers (controller, service, repository, model)
+- **Naming Conventions**: Descriptive class, method, and variable names
+- **File Organization**: Related classes grouped in appropriate packages
 
-## 🤝 Contributing
+### Code Quality
+- **DRY Principle**: Eliminated code duplication through helper methods and base classes
+- **KISS Principle**: Simple, straightforward implementations
+- **YAGNI Principle**: Avoided over-engineering and unnecessary complexity
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+### Documentation
+- **JavaDoc**: Comprehensive method and class documentation
+- **API Documentation**: Clear endpoint descriptions and request/response formats
+- **Code Comments**: Explanatory comments for complex business logic
 
-## 📞 Support
+### Error Handling
+- **Global Exception Handler**: Centralized error processing
+- **Custom Exceptions**: Specific exception types for different error scenarios
+- **Consistent Error Responses**: Standardized error format across all services
 
-For issues and questions:
-- Check the [troubleshooting section](#-troubleshooting)
-- Review service logs
-- Verify service health endpoints
-- Check network connectivity between services
+### Testing
+- **Unit Tests**: Test individual components in isolation
+- **Integration Tests**: Test service interactions
+- **Test Coverage**: Comprehensive test coverage for critical business logic
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-**Note**: This project is designed for educational purposes and demonstrates microservices architecture patterns. For production use, consider additional security measures, monitoring, and scaling strategies.
+### Security
+- **Input Validation**: Proper validation of all incoming data
+- **Secure Defaults**: Secure configuration out of the box
+- **Principle of Least Privilege**: Minimal required permissions for each role
