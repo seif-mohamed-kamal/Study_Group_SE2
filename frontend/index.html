@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <title>StudyGroup</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body x-data="app()" x-init="init()">
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">StudyGroup</div>
+        <nav>
+          <a href="#/" :class="{ active: currentRoute === '/' }">Groups</a>
+          <template x-if="$store.auth.token && !currentRoute.startsWith('/admin') && $store.auth.roles.includes('student')">
+            <a href="#/student">Student Dashboard</a>
+          </template>
+          <template x-if="$store.auth.roles.includes('creator')">
+            <a href="#/creator">Group Dashboard</a>
+          </template>
+          <template x-if="$store.auth.roles.includes('admin')">
+            <a href="#/admin">Admin Dashboard</a>
+          </template>
+          <template x-if="!$store.auth.token">
+            <a href="#/login">Login</a>
+          </template>
+          <template x-if="!$store.auth.token">
+            <a href="#/register">Register</a>
+          </template>
+          <template x-if="$store.auth.token">
+            <button type="button" class="btn btn-ghost btn-sm" @click="logout">Logout</button>
+          </template>
+        </nav>
+      </header>
+      <main>
+        <template x-if="currentRoute === '/'">
+          <div x-data="homePage()" x-init="init()">
+            <section class="hero-band"></section>
+            <section class="home-content">
+              <h2>Study Groups</h2>
+              <div class="home-search">
+                <label>Searchbar:</label>
+                <select x-model="searchMode">
+                  <option value="subject">Search by Subject</option>
+                  <option value="location">Search by Location</option>
+                  <option value="time">Search by Time</option>
+                </select>
+                <template x-if="searchMode !== 'time'">
+                  <input x-model="textQuery" placeholder="Type your search here" />
+                </template>
+                <template x-if="searchMode === 'time'">
+                  <div>
+                    <input type="datetime-local" x-model="fromTime" />
+                    <input type="datetime-local" x-model="toTime" />
+                  </div>
+                </template>
+                <button type="button" class="btn btn-primary btn-sm" @click="runSearch">Search</button>
+                <button type="button" class="btn btn-ghost btn-sm" @click="loadGroups">Reset</button>
+              </div>
+              <h3>Available Groups to join:</h3>
+              <div class="group-grid">
+                <template x-for="group in groups" :key="group.id">
+                  <article class="group-card">
+                    <strong x-text="`${group.subject} - ${group.meetingType} - ${group.location}`"></strong>
+                    <div class="row row-card-actions">
+                      <a :href="`#/group/${group.id}`" class="link-pill">Details</a>
+                      <template x-if="!$store.auth.token || (!$store.auth.roles.includes('admin') && !$store.auth.roles.includes('creator') && $store.auth.roles.includes('student') && !$store.groupAccess.canAccess(group.id))">
+                        <button type="button" class="btn btn-primary btn-sm" @click="joinGroup(group.id)">Join Group</button>
+                      </template>
+                      <template x-if="$store.auth.token && !$store.auth.roles.includes('admin') && $store.groupAccess.canAccess(group.id)">
+                        <a :href="`#/materials/${group.id}`" class="link-pill">Materials</a>
+                      </template>
+                    </div>
+                  </article>
+                </template>
+              </div>
+              <template x-if="status">
+                <p :class="isSuccess ? 'feedback-success' : 'error'" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+        <template x-if="currentRoute === '/login'">
+          <div x-data="loginPage()">
+            <div class="auth-split-page">
+              <div class="auth-image-left">
+                <img src="/assets/log2.png" alt="Login" />
+              </div>
+              <div class="auth-form-right">
+                <section class="card card-narrow">
+                  <h2>Login</h2>
+                  <form @submit.prevent="onSubmit" class="form-stack">
+                    <input x-model="email" placeholder="Email" required />
+                    <input type="password" x-model="password" placeholder="Password" required />
+                    <button type="submit" class="btn btn-primary">Login</button>
+                  </form>
+                  <template x-if="error">
+                    <p class="error" x-text="error"></p>
+                  </template>
+                </section>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template x-if="currentRoute === '/register'">
+          <div x-data="registerPage()">
+            <div class="auth-split-page">
+              <div class="auth-image-left">
+                <img src="/assets/log.png" alt="Register" />
+              </div>
+              <div class="auth-form-right">
+                <section class="card card-narrow">
+                  <h2>Register</h2>
+                  <form @submit.prevent="onSubmit" class="form-stack">
+                    <input placeholder="Name" x-model="form.name" required />
+                    <input placeholder="Email@example.com" x-model="form.email" required />
+                    <input type="password" placeholder="Password" x-model="form.password" required />
+                    <input type="password" placeholder="Confirm Password" x-model="form.confirmPassword" required />
+                    <select x-model="form.role">
+                      <option value="STUDENT">Student</option>
+                      <option value="CREATOR">Creator</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                    <small>Password must include uppercase, lowercase, a number, and a special character.</small>
+                    <button type="submit" class="btn btn-primary">Create account</button>
+                  </form>
+                  <template x-if="status">
+                    <p :class="status.includes('successfully') ? 'feedback-success' : 'error'" x-text="status"></p>
+                  </template>
+                </section>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template x-if="currentRoute === '/admin'">
+          <div x-data="adminPage()" x-init="init()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Admin Dashboard</h2>
+                <p class="text-muted">Review creator accounts and new study groups</p>
+              </div>
+              <template x-if="notice">
+                <p :class="notice.kind === 'success' ? 'feedback-success' : 'error'" x-text="notice.text"></p>
+              </template>
+              <h3 class="section-title">Creator requests</h3>
+              <ul class="list list-elevated">
+                <template x-for="request in creatorRequests" :key="request.UserId">
+                  <li>
+                    <span class="request-line">
+                      <span x-text="request.Name"></span>
+                      <span class="text-muted" x-text="`(${request.Email})`"></span>
+                    </span>
+                    <div class="row row-actions">
+                      <button type="button" class="btn btn-success" @click="decideCreator(request.UserId, true)">Approve</button>
+                      <button type="button" class="btn btn-danger" @click="decideCreator(request.UserId, false)">Reject</button>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+              <template x-if="creatorRequests.length === 0">
+                <p class="text-muted">No pending creator requests.</p>
+              </template>
+              <h3 class="section-title">Group requests</h3>
+              <ul class="list list-elevated">
+                <template x-for="group in groupRequests" :key="group.id">
+                  <li>
+                    <span class="request-line" x-text="group.subject"></span>
+                    <div class="row row-actions">
+                      <button type="button" class="btn btn-success" @click="decideGroup(group.id, true)">Accept</button>
+                      <button type="button" class="btn btn-danger" @click="decideGroup(group.id, false)">Reject</button>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+              <template x-if="groupRequests.length === 0">
+                <p class="text-muted">No pending group requests.</p>
+              </template>
+            </section>
+          </div>
+        </template>
+        <template x-if="currentRoute === '/creator'">
+          <div x-data="creatorPage()" x-init="init()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Group Dashboard</h2>
+                <p class="text-muted">Manage your study groups and join requests</p>
+              </div>
+              <div class="row row-actions">
+                <a href="#/creator/create-group">
+                  <button type="button" class="btn btn-primary">Create Group</button>
+                </a>
+              </div>
+              <h3 class="section-title">My groups</h3>
+              <ul class="list list-elevated">
+                <template x-for="group in groups" :key="group.id">
+                  <li>
+                    <span class="request-line">
+                      <span x-text="group.subject"></span>
+                    </span>
+                    <div class="row row-actions">
+                      <a :href="`#/materials/${group.id}`" class="link-pill">Materials</a>
+                      <a :href="`#/creator/edit/${group.id}`">
+                        <button type="button" class="btn btn-secondary btn-sm">Edit group</button>
+                      </a>
+                      <button type="button" class="btn btn-danger btn-sm" @click="deleteGroup(group.id)">Delete Group</button>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+              <h3 class="section-title">Pending join requests</h3>
+              <ul class="list list-elevated">
+                <template x-for="request in requests" :key="request.RequestId">
+                  <li>
+                    <span class="request-line">
+                      <span x-text="request.StudentName"></span>
+                      requests
+                      <strong x-text="request.GroupSubject"></strong>
+                    </span>
+                    <div class="row row-actions">
+                      <button type="button" class="btn btn-success btn-sm" @click="decide(request.RequestId, true)">Accept</button>
+                      <button type="button" class="btn btn-danger btn-sm" @click="decide(request.RequestId, false)">Reject</button>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+              <template x-if="status">
+                <p :class="status.toLowerCase().includes('accepted') || status.toLowerCase().includes('deleted') || status.toLowerCase().includes('success') ? 'feedback-success' : 'error'" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+        <template x-if="currentRoute === '/creator/create-group'">
+          <div x-data="creatorCreateGroupPage()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Create Group</h2>
+              </div>
+              <form @submit.prevent="onSubmit" class="form-stack">
+                <input placeholder="Subject" x-model="form.subject" required />
+                <input placeholder="Location" x-model="form.location" required />
+                <select x-model="form.meetingType">
+                  <option value="Online">Online</option>
+                  <option value="Offline">Offline</option>
+                </select>
+                <input type="number" min="2" placeholder="Max Members" x-model="form.maxMembers" required />
+                <input type="datetime-local" x-model="form.meetingTime" required />
+                <textarea placeholder="Description" x-model="form.description" required></textarea>
+                <button type="submit" class="btn btn-primary">Create Group</button>
+              </form>
+              <template x-if="status">
+                <p :class="status.toLowerCase().includes('success') ? 'feedback-success' : 'error'" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+        <template x-if="currentRoute === '/student'">
+          <div x-data="studentPage()" x-init="init()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Student Dashboard</h2>
+                <p class="text-muted">Your join requests</p>
+              </div>
+              <ul class="list list-elevated">
+                <template x-for="request in requests" :key="request.requestId">
+                  <li>
+                    <span class="request-line" x-text="`${request.groupSubject} - ${request.status}`"></span>
+                  </li>
+                </template>
+              </ul>
+              <template x-if="requests.length === 0">
+                <p class="text-muted">No join requests yet.</p>
+              </template>
+              <template x-if="status">
+                <p class="error" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+
+        <template x-if="currentRoute.startsWith('/group/')">
+          <div x-data="groupDetailsPage()" x-init="init()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Group Details</h2>
+              </div>
+              <template x-if="group">
+                <div class="form-stack">
+                  <p><strong>Subject:</strong> <span x-text="group.subject"></span></p>
+                  <p><strong>Location:</strong> <span x-text="group.location"></span></p>
+                  <p><strong>Type:</strong> <span x-text="group.meetingType"></span></p>
+                  <p><strong>Description:</strong> <span x-text="group.description"></span></p>
+                  <a href="#/" class="link-pill">Back to Groups</a>
+                </div>
+              </template>
+              <template x-if="status">
+                <p class="error" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+
+        <template x-if="currentRoute.startsWith('/creator/edit/')">
+          <div x-data="creatorEditGroupPage()" x-init="init()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Edit Group</h2>
+              </div>
+              <form @submit.prevent="onSubmit" class="form-stack">
+                <input placeholder="Subject" x-model="form.subject" required />
+                <input placeholder="Location" x-model="form.location" required />
+                <select x-model="form.meetingType">
+                  <option value="Online">Online</option>
+                  <option value="Offline">Offline</option>
+                </select>
+                <input type="number" min="2" placeholder="Max Members" x-model="form.maxMembers" required />
+                <input type="datetime-local" x-model="form.meetingTime" required />
+                <textarea placeholder="Description" x-model="form.description" required></textarea>
+                <button type="submit" class="btn btn-primary">Update Group</button>
+              </form>
+              <template x-if="status">
+                <p :class="status.toLowerCase().includes('success') ? 'feedback-success' : 'error'" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+
+        <template x-if="currentRoute.startsWith('/materials/') && !currentRoute.endsWith('/add')">
+          <div x-data="materialsPage()" x-init="init()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Materials</h2>
+              </div>
+              <div class="row row-actions">
+                <a :href="`#/materials/${currentRoute.split('/')[2]}/add`" class="btn btn-primary btn-sm">Add Material</a>
+              </div>
+              <template x-for="material in materials" :key="material.id">
+                <div class="group-card" style="margin-bottom: 1rem;">
+                  <strong x-text="material.fileName"></strong>
+                  <p class="text-muted" x-text="material.description || ''"></p>
+                  <p class="text-muted" x-text="`By ${material.uploaderName || 'Unknown'} — ${material.uploadedAt || ''}`"></p>
+                  <a :href="material.filePath" target="_blank" class="link-pill">Open Link</a>
+                  <button type="button" class="btn btn-ghost btn-sm" @click="loadComments(material.id)">Comments</button>
+
+                  <template x-if="activeMaterialId === material.id">
+                    <div class="form-stack" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+                      <template x-if="comments.length === 0">
+                        <p class="text-muted">No comments yet.</p>
+                      </template>
+                      <ul class="list list-elevated">
+                        <template x-for="comment in comments" :key="comment.id">
+                          <li>
+                            <strong x-text="comment.userName || 'User'"></strong>
+                            <span x-text="comment.text"></span>
+                            <span class="text-muted" x-text="comment.createdAt || ''"></span>
+                          </li>
+                        </template>
+                      </ul>
+                      <div class="row row-actions" style="gap: 0.5rem;">
+                        <input x-model="newComment" placeholder="Write a comment..." style="flex: 1;" />
+                        <button type="button" class="btn btn-primary btn-sm" @click="addComment(material.id)">Post</button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+              <template x-if="materials.length === 0">
+                <p class="text-muted">No materials yet.</p>
+              </template>
+              <template x-if="status">
+                <p class="error" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+
+        <template x-if="currentRoute.endsWith('/add') && currentRoute.includes('/materials/')">
+          <div x-data="materialsAddPage()">
+            <section class="card">
+              <div class="page-heading">
+                <h2>Add Material</h2>
+              </div>
+              <form @submit.prevent="onSubmit" class="form-stack">
+                <input placeholder="Title" x-model="form.title" required />
+                <textarea placeholder="Content / Description" x-model="form.content"></textarea>
+                <input placeholder="File URL" x-model="form.fileUrl" />
+                <button type="submit" class="btn btn-primary">Add Material</button>
+              </form>
+              <template x-if="status">
+                <p :class="status.toLowerCase().includes('success') ? 'feedback-success' : 'error'" x-text="status"></p>
+              </template>
+            </section>
+          </div>
+        </template>
+      </main>
+    </div>
+    <script src="/src/app.js"></script>
+  </body>
+</html>

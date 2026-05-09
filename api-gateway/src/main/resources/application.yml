@@ -1,0 +1,58 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+
+        - id: auth
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/api/auth/**
+
+        - id: groups
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/api/groups/**
+
+        - id: group-creator
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/api/group-creator/**
+
+        - id: material
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/api/material/**
+
+        - id: student
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/api/student/**
+
+        - id: comment
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/api/comment/**
+
+        - id: home
+          uri: lb://STUDYGROUP
+          predicates:
+            - Path=/
+
+        - id: admin
+          uri: lb://ADMINMICROSERVICE
+          predicates:
+            - Path=/api/admin/**
+
+
+        
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka

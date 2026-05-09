@@ -1,0 +1,290 @@
+# services:
+#   # MySQL Database
+#   mysql:
+#     image: mysql:8.0
+#     container_name: studygroup-mysql
+#     environment:
+#       MYSQL_ROOT_PASSWORD: rootpassword
+#       MYSQL_DATABASE: studygroup_db
+#       MYSQL_USER: root
+#       MYSQL_PASSWORD: 
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - mysql_data:/var/lib/mysql
+#     networks:
+#       - studygroup-network
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       timeout: 20s
+#       retries: 10
+
+#   # Eureka Discovery Server
+#   discovery-server:
+#     build: ./discovery-server
+#     container_name: discovery-server
+#     ports:
+#       - "8761:8761"
+#     environment:
+#       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+#       EUREKA_CLIENT_REGISTER_WITH_EUREKA: false
+#       EUREKA_CLIENT_FETCH_REGISTRY: false
+#     networks:
+#       - studygroup-network
+#     depends_on:
+#       - mysql
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8761"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 10
+
+#   # API Gateway
+#   api-gateway:
+#     build: ./api-gateway
+#     container_name: api-gateway
+#     ports:
+#       - "8085:8085"
+#     environment:
+#       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+#     networks:
+#       - studygroup-network
+#     depends_on:
+#       discovery-server:
+#         condition: service_healthy
+#       mysql:
+#         condition: service_healthy
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8085"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+#   # Study Group Service
+#   studygroup:
+#     build: ./studygroup
+#     container_name: studygroup-service
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3307/studygroup_db
+#       SPRING_DATASOURCE_USERNAME: root
+#       SPRING_DATASOURCE_PASSWORD: rootpassword
+#       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+#       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+#       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+#     networks:
+#       - studygroup-network
+#     depends_on:
+#       discovery-server:
+#         condition: service_healthy
+#       mysql:
+#         condition: service_healthy
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8080/api/groups/getAll"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+#   # Admin Microservice
+#   adminmicroservice:
+#     build: ./adminmicroservice
+#     container_name: admin-service
+#     ports:
+#       - "8082:8080"
+#     environment:
+#       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3307/studygroup_db
+#       SPRING_DATASOURCE_USERNAME: root
+#       SPRING_DATASOURCE_PASSWORD: rootpassword
+#       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+#       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+#       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+#     networks:
+#       - studygroup-network
+#     depends_on:
+#       discovery-server:
+#         condition: service_healthy
+#       mysql:
+#         condition: service_healthy
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8080/api/admin/creator/requests"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+#   # Frontend Service
+#   frontend:
+#     build: ./frontend
+#     container_name: frontend
+#     ports:
+#       - "3000:80"
+#     networks:
+#       - studygroup-network
+#     depends_on:
+#       api-gateway:
+#         condition: service_healthy
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+# volumes:
+#   mysql_data:
+#     driver: local
+
+# networks:
+#   studygroup-network:
+#     driver: bridge
+
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: studygroup-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: studygroup_db
+      MYSQL_USER: studyuser
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - studygroup-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Eureka Discovery Server
+  discovery-server:
+    build: ./discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: false
+      EUREKA_CLIENT_FETCH_REGISTRY: false
+    networks:
+      - studygroup-network
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8085:8085"
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+    networks:
+      - studygroup-network
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Study Group Service
+  studygroup:
+    build: ./studygroup
+    container_name: studygroup-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3307/studygroup_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+    networks:
+      - studygroup-network
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/groups/getAll"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Admin Microservice
+  adminmicroservice:
+    build: ./adminmicroservice
+    container_name: admin-service
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3307/studygroup_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+    networks:
+      - studygroup-network
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/admin/creator/requests"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Service
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    networks:
+      - studygroup-network
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  studygroup-network:
+    driver: bridge
