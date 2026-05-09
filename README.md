@@ -109,14 +109,14 @@ npm run dev
 
 ```
 Study_Group_SE2/
-├── adminmicroservice/          # Admin management service
-├── api-gateway/               # API Gateway for routing
-├── discovery-server/           # Eureka service registry
-├── frontend/                  # React frontend application
-├── studygroup/               # Core study group service
-├── docker-compose.yml        # Docker orchestration
-├── .gitignore               # Git ignore rules
-└── README.md               # This file
+├── adminmicroservice/         
+├── api-gateway/           
+├── discovery-server/   
+├── frontend/            
+├── studygroup/
+├── docker-compose.yml   
+├── .gitignore       
+└── README.md  
 ```
 
 ## 🔧 Services Details
