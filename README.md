@@ -242,24 +242,71 @@ docker-compose up --build studygroup
 
 ## 🎨 Design Patterns Used
 
-### Architectural Patterns
-- **Microservices Architecture**: Distributed system with independent services
-- **API Gateway Pattern**: Single entry point for routing and cross-cutting concerns
-- **Service Discovery Pattern**: Eureka for dynamic service registration and discovery
+### Data Access Patterns
+- **Repository Pattern**: Separates database operations from business logic
+  - Used in: UserRepository, GroupRepository, MaterialRepository, AdminRepository
+  - Example: `userRepository.findByEmail(...)`
+
+### Service Layer Patterns
+- **Service Layer Pattern**: Handles business logic between Controller and Repository layers
+  - Used in: AuthService, GroupService, StudentService, AdminService
+  - Flow: Controller → Service → Repository
+
+### Creational Patterns
+- **Singleton Pattern**: Spring creates one shared instance of beans
+  - Used in: @Service, @Component, @Configuration classes
+  - Examples: JwtService, JwtAuthFilter, SecurityConfig
+- **Factory Pattern**: Spring acts as factory for bean creation
+  - Example: `@Bean public PasswordEncoder passwordEncoder()`
+- **Builder Pattern**: Step-by-step object construction
+  - Used in: JWT token generation with `Jwts.builder()`
+
+### Structural Patterns
+- **Adapter Pattern**: Converts Entity objects to API response objects
+  - Used in: DTO mapping inside services
+  - Example: Converting Group entity to GroupDTO
+- **Decorator Pattern**: Adds behavior dynamically
+  - Used in: Security filters like JwtAuthFilter
+- **Facade Pattern**: Simple interface hiding complex operations
+  - Used in: Service layer (AuthService, AdminService)
+  - Example: `authService.login(...)`
+- **Proxy Pattern**: Spring creates proxies for cross-cutting concerns
+  - Used in: @Transactional methods, AOP, logging
 
 ### Behavioral Patterns
-- **Aspect-Oriented Programming**: Cross-cutting concerns like logging and performance monitoring
-- **Repository Pattern**: Data access abstraction through repository interfaces
+- **Strategy Pattern**: Different algorithms can be changed without modifying logic
+  - Used in: Spring Security password encoding
+  - Example: `BCryptPasswordEncoder()`
+- **Chain of Responsibility Pattern**: Request passes through multiple filters
+  - Used in: Spring Security filter chain
+  - Examples: JwtAuthFilter, UsernamePasswordAuthenticationFilter
+- **Dependency Injection (IoC Pattern)**: Objects injected automatically by Spring
+  - Used in: Constructor injection with @RequiredArgsConstructor
+  - Example: `private final JwtService jwtService;`
+
+### Architectural Patterns
+- **Microservices Architecture**: Application divided into independent services
+  - Components: StudyGroup Microservice, Admin Microservice
+- **API Gateway Pattern**: Single entry point for client requests
+  - Used in: API Gateway service
+- **Service Discovery Pattern**: Dynamic service registration and discovery
+  - Used in: Discovery Server with Eureka
+
+### Data Transfer Patterns
+- **DTO Pattern**: Transfers only needed data between backend and frontend
+  - Used in: LoginDTO, GroupDTO, ResponseDTO, MaterialResponseDTO
+  - Example: `GroupDTO dto = new GroupDTO();`
 
 ## 🏗️ SOLID Principles Implementation
 
 ### Single Responsibility Principle (SRP)
-- Each service handles one specific business domain
-- Separate controllers for different functionalities (Auth, Groups, Admin)
+- Each class handles one specific responsibility
+- Examples: JwtService (JWT operations), CommentService (comment management), MaterialService (material management)
 - Dedicated repositories for data access
 
 ### Interface Segregation Principle (ISP)
-- Specific service interfaces for different operations (IGroupService, IAdminService, etc.)
+- Specific service interfaces for different operations
+- Examples: IGroupService, ICommentService, ICurrentUserService
 - Separate DTOs for different use cases
 
 ### Dependency Inversion Principle (DIP)
@@ -269,17 +316,53 @@ docker-compose up --build studygroup
 
 ## 🧹 Clean Code Practices
 
-### Code Organization
-- **Package Structure**: Clear separation by layers (controller, service, repository, model)
-- **Naming Conventions**: Descriptive class, method, and variable names
-- **File Organization**: Related classes grouped in appropriate packages
+### 1. Layered Architecture
+- **Controller Layer**: Handles HTTP requests and responses
+- **Service Layer**: Contains business logic
+- **Repository Layer**: Manages data access
+- **DTO Layer**: Data transfer objects
+- **Security Layer**: Authentication and authorization
 
-### Error Handling
-- **Global Exception Handler**: Centralized error processing with @RestControllerAdvice
-- **Custom Exception Handling**: Specific handling for validation and enum errors
-- **Consistent Error Responses**: Standardized ResponseDTO format across all services
+### 2. Meaningful Naming Conventions
+- **Classes**: AuthService, GroupService, JwtAuthFilter
+- **Methods**: requestToJoinGroup(), getAllCommentsByMaterialId()
+- **Variables**: Clear and descriptive names
 
-### Security
-- **JWT Authentication**: Token-based security with role-based access control
-- **Input Validation**: Proper validation of all incoming data
-- **Role-Based Access**: Different permissions for STUDENT, CREATOR, and ADMIN roles
+### 3. Dependency Injection
+- **Constructor Injection**: Using @RequiredArgsConstructor
+- **Reduced Coupling**: Improves testability
+- **Example**: `private final JwtService jwtService;`
+
+### 4. Reusability and Modularity
+- **Interfaces**: IGroupService, ICommentService, ICurrentUserService
+- **Shared Services**: CurrentUserService reused for authentication
+
+### 5. DTO Usage
+- **Data Abstraction**: Transfer data without exposing entities
+- **Security**: Protects database structure
+- **Examples**: LoginDTO, GroupDTO, ResponseDTO
+
+### 6. Unified API Response Structure
+- **Consistent Format**: ResponseDTO<T> for all endpoints
+- **Examples**: ResponseDTO<Boolean>, ResponseDTO<List<GroupDTO>>
+- **Simplified Frontend Integration**
+
+### 7. Validation and Error Handling
+- **Business Rules**: Validations inside service classes
+- **Examples**: Email validation, permission checks, request status validation
+- **Global Exception Handler**: @RestControllerAdvice
+- **Consistent Error Responses**: Standardized format
+
+### 8. Transaction Management
+- **Database Consistency**: @Transactional on critical operations
+- **Examples**: acceptGroup(), acceptRequest()
+
+### 9. Organized Project Structure
+- **Packages**: Controller, Service, Repository, Models, DTO, Security, Config, Enums
+- **Improved Navigation**: Easy code organization
+- **Maintainability**: Clear separation of concerns
+
+### 10. Security Best Practices
+- **Password Encryption**: BCryptPasswordEncoder
+- **JWT Authentication**: Token-based security
+- **Role-Based Authorization**: Spring Security with STUDENT, CREATOR, ADMIN roles
